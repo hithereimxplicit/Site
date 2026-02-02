@@ -86,7 +86,7 @@ body::after{
   margin:0;
   font-size: clamp(2.4rem, 5vw, 3.4rem);
   letter-spacing:-.9px;
-  line-height:1.05;
+  line-height:1.12;
 
   /* animated gradient text */
   background: linear-gradient(
