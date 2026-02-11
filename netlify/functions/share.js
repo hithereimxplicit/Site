@@ -30,8 +30,13 @@ export const handler = async (event) => {
   const buf = Buffer.from(await dl.data.arrayBuffer());
 
   // delete (best effort)
-  await supabase.storage.from("one-time").remove([row.path]).catch(() => {});
-  await supabase.from("shares").delete().eq("token", token).catch(() => {});
+  try {
+    await supabase.storage.from("one-time").remove([row.path]);
+  } catch (_) {}
+
+  try {
+    await supabase.from("shares").delete().eq("token", token);
+  } catch (_) {}
 
   return {
     statusCode: 200,
