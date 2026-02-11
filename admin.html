@@ -3,39 +3,123 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Admin Upload</title>
+  <title>Admin Upload • Digital Communications Blog</title>
+  <link rel="stylesheet" href="styles.css" />
   <style>
-    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; padding: 24px; }
-    .row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
-    input[type="password"], input[type="file"] { padding: 8px; }
-    button { padding: 10px 14px; cursor: pointer; }
-    #status { margin-top: 14px; white-space: pre-wrap; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; }
-    .ok { color: #0a7a0a; }
-    .bad { color: #b00020; }
+    /* Light-touch form styling that should sit nicely within your existing theme */
+    .admin-grid { display: grid; gap: 14px; }
+    .admin-row { display: grid; gap: 10px; }
+
+    .field-label {
+      font-size: 0.95rem;
+      opacity: 0.9;
+      display: inline-block;
+      margin-bottom: 6px;
+    }
+
+    .field {
+      width: 100%;
+      padding: 12px 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(0,0,0,0.25);
+      color: inherit;
+      outline: none;
+    }
+
+    .field:focus {
+      border-color: rgba(255,255,255,0.28);
+      box-shadow: 0 0 0 3px rgba(255,255,255,0.06);
+    }
+
+    .actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+
+    .btn {
+      padding: 10px 14px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.14);
+      background: rgba(255,255,255,0.06);
+      color: inherit;
+      cursor: pointer;
+    }
+
+    .btn:hover { background: rgba(255,255,255,0.10); }
+    .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    .status {
+      white-space: pre-wrap;
+      padding: 12px 14px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(0,0,0,0.25);
+    }
+
+    .status.ok { border-color: rgba(52, 211, 153, 0.35); }
+    .status.bad { border-color: rgba(244, 63, 94, 0.35); }
+
+    .hint {
+      font-size: 0.9rem;
+      opacity: 0.85;
+      line-height: 1.35;
+      margin-top: 6px;
+    }
+
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; }
   </style>
 </head>
 <body>
-  <h1>Private Upload</h1>
+  <main class="container post-page">
+    <a class="back-pill reveal" href="index.html">← Back to homepage</a>
 
-  <div class="row">
-    <label>
-      Admin key:
-      <input type="password" id="adminKey" placeholder="Enter ADMIN_KEY" />
-    </label>
+    <article class="post-article reveal">
+      <div class="post-meta">
+        <span class="meta-pill">Admin</span>
+        <span class="meta-pill meta-outline">One-time links</span>
+      </div>
 
-    <input type="file" id="fileInput" />
-    <button id="uploadBtn" type="button">Upload</button>
-  </div>
+      <h1 class="post-title">Private Upload</h1>
 
-  <div id="status">Choose a file, enter your admin key, then click Upload.</div>
+      <div class="post-content">
+        <p class="hint">
+          Upload a file and generate a <strong>one-time</strong> sharing link. The link will work once, then the file is deleted.
+        </p>
+
+        <div class="admin-grid">
+          <div class="admin-row">
+            <span class="field-label">Admin key</span>
+            <input class="field" type="password" id="adminKey" placeholder="Enter ADMIN_KEY" autocomplete="current-password" />
+            <div class="hint">
+              This must match your <span class="mono">ADMIN_KEY</span> in Netlify environment variables.
+            </div>
+          </div>
+
+          <div class="admin-row">
+            <span class="field-label">File</span>
+            <input class="field" type="file" id="fileInput" />
+          </div>
+
+          <div class="actions">
+            <button class="btn" id="uploadBtn" type="button">Upload</button>
+            <button class="btn" id="copyBtn" type="button" disabled>Copy link</button>
+          </div>
+
+          <div id="status" class="status">Choose a file, enter your admin key, then click Upload.</div>
+        </div>
+      </div>
+    </article>
+  </main>
 
   <script>
     const statusEl = document.getElementById("status");
-    const btn = document.getElementById("uploadBtn");
+    const uploadBtn = document.getElementById("uploadBtn");
+    const copyBtn = document.getElementById("copyBtn");
+
+    let lastLink = "";
 
     function setStatus(text, ok = true) {
       statusEl.textContent = text;
-      statusEl.className = ok ? "ok" : "bad";
+      statusEl.classList.remove("ok", "bad");
+      statusEl.classList.add(ok ? "ok" : "bad");
     }
 
     async function uploadFile() {
@@ -43,10 +127,13 @@
         const file = document.getElementById("fileInput").files[0];
         const adminKey = document.getElementById("adminKey").value.trim();
 
+        lastLink = "";
+        copyBtn.disabled = true;
+
         if (!file) return setStatus("No file selected.", false);
         if (!adminKey) return setStatus("Missing admin key. Paste the same ADMIN_KEY you set in Netlify env vars.", false);
 
-        btn.disabled = true;
+        uploadBtn.disabled = true;
         setStatus("Uploading…");
 
         const fd = new FormData();
@@ -69,21 +156,45 @@
         const data = isJson ? await res.json() : { url: (await res.text()).trim() };
         if (!data.url) return setStatus("Upload succeeded but no URL returned. Check function response.", false);
 
-        const full = window.location.origin + data.url;
-        setStatus(`Upload complete!\n\nOne-time link:\n${full}\n\n(Open it once; it should download then delete.)`, true);
+        lastLink = window.location.origin + data.url;
+
+        setStatus(
+          `Upload complete!\n\nOne-time link:\n${lastLink}\n\n(Open it once; it should download then delete.)`,
+          true
+        );
+
+        copyBtn.disabled = false;
 
         // Copy to clipboard (best effort)
         if (navigator.clipboard) {
-          try { await navigator.clipboard.writeText(full); } catch (e) {}
+          try { await navigator.clipboard.writeText(lastLink); } catch (_) {}
         }
       } catch (err) {
         setStatus("Unexpected error:\n" + (err?.stack || err?.message || String(err)), false);
       } finally {
-        btn.disabled = false;
+        uploadBtn.disabled = false;
       }
     }
 
-    btn.addEventListener("click", uploadFile);
+    async function copyLink() {
+      if (!lastLink) return;
+      try {
+        if (navigator.clipboard) {
+          await navigator.clipboard.writeText(lastLink);
+          setStatus(`Copied to clipboard:\n${lastLink}`, true);
+        } else {
+          setStatus(`Copy not supported in this browser.\n\n${lastLink}`, false);
+        }
+      } catch (err) {
+        setStatus("Could not copy link:\n" + (err?.message || String(err)), false);
+      }
+    }
+
+    uploadBtn.addEventListener("click", uploadFile);
+    copyBtn.addEventListener("click", copyLink);
   </script>
+
+  <script src="site.js"></script>
+  <script src="analytics.js"></script>
 </body>
 </html>
