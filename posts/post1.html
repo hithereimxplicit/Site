@@ -28,6 +28,36 @@
         </p>
       </div>
     </article>
+
+    <section class="comments reveal" data-comments-root>
+      <div class="comments-meta">
+        <span class="chip">Comments</span>
+        <span class="chip chip-outline"><span data-comments-count>0</span> total</span>
+        <button type="button" class="chip chip-outline" data-comments-clear>Clear</button>
+      </div>
+
+      <p class="comments-note">Leave a comment on this post. (Comments are saved locally in your browser — no login required.)</p>
+
+      <form class="comment-form" data-comments-form>
+        <label>
+          <span class="sr-only">Name</span>
+          <input type="text" placeholder="Name (optional)" autocomplete="name" data-comments-name />
+        </label>
+
+        <label>
+          <span class="sr-only">Comment</span>
+          <textarea placeholder="Write a comment…" required data-comments-text></textarea>
+        </label>
+
+        <div class="comment-actions">
+          <button class="btn-primary" type="submit">Post comment</button>
+          <button type="reset">Reset</button>
+        </div>
+      </form>
+
+      <p class="comment-empty" data-comments-empty>No comments yet — be the first.</p>
+      <ul class="comment-list" data-comments-list></ul>
+    </section>
   </main>
 
   <script src="../site.js"></script>
