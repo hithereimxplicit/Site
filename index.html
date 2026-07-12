@@ -52,7 +52,7 @@
 </main>
 
   <script>
-    (() => {
+    (async () => {
       const sessionKey = "charlie-site-view-sent";
 
       if (sessionStorage.getItem(sessionKey)) {
@@ -70,6 +70,31 @@
       const referrer = document.referrer
         ? new URL(document.referrer).hostname
         : "Direct visit";
+
+      let totalViews = "Unavailable";
+
+      try {
+        const counterResponse = await fetch(
+          "https://api.counterapi.dev/v1/charliestimac-site/total-views/up"
+        );
+
+        if (!counterResponse.ok) {
+          throw new Error(`Counter request failed with ${counterResponse.status}`);
+        }
+
+        const counterData = await counterResponse.json();
+        const counterValue =
+          counterData.count ??
+          counterData.value ??
+          counterData.data?.count ??
+          counterData.data?.value;
+
+        if (typeof counterValue === "number") {
+          totalViews = counterValue.toLocaleString();
+        }
+      } catch (error) {
+        console.error("Unable to update total site views:", error);
+      }
 
       const payload = {
         embeds: [
@@ -94,6 +119,11 @@
               {
                 name: "Referrer",
                 value: referrer,
+                inline: false
+              },
+              {
+                name: "Total site views",
+                value: `**${totalViews}**`,
                 inline: false
               }
             ],
