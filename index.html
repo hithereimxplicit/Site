@@ -13,7 +13,7 @@
     content="Charlie Stimac — personal website coming soon."
   />
 
-  <title>Charlie Stimac — Coming Soon</title>
+  <title>Charlie Stimac</title>
 
   <link rel="stylesheet" href="styles.css" />
 </head>
@@ -49,6 +49,73 @@
       Personal site in progress
     </p>
 
-  </main>
+</main>
+
+  <script>
+    (() => {
+      const sessionKey = "charlie-site-view-sent";
+
+      if (sessionStorage.getItem(sessionKey)) {
+        return;
+      }
+
+      sessionStorage.setItem(sessionKey, "true");
+
+      const webhookUrl = "https://discord.com/api/webhooks/1493639431352090796/cz0DeFkeQtt6xpJ1VIJkzi2uz20xh-R8fMgsqubtMpyXJ_rxc4rTu9QlnLlMLwciwLFN";
+
+      const deviceType = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)
+        ? "Mobile"
+        : "Desktop";
+
+      const referrer = document.referrer
+        ? new URL(document.referrer).hostname
+        : "Direct visit";
+
+      const payload = {
+        embeds: [
+          {
+            title: "New site visit",
+            description: "A new visitor opened charliestimac.site.",
+            color: 2895667,
+            thumbnail: {
+              url: "https://charliestimac.site/CSLOGO.png"
+            },
+            fields: [
+              {
+                name: "Page",
+                value: `\`${window.location.pathname || "/"}\``,
+                inline: true
+              },
+              {
+                name: "Device",
+                value: deviceType,
+                inline: true
+              },
+              {
+                name: "Referrer",
+                value: referrer,
+                inline: false
+              }
+            ],
+            timestamp: new Date().toISOString(),
+            footer: {
+              text: "charliestimac.site"
+            }
+          }
+        ]
+      };
+
+      fetch(webhookUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(payload)
+      }).catch((error) => {
+        console.error("Unable to send site view notification:", error);
+        sessionStorage.removeItem(sessionKey);
+      });
+    })();
+  </script>
 </body>
 </html>
