@@ -1,7 +1,12 @@
 const JSON_HEADERS = {
   "content-type": "application/json; charset=utf-8",
-  "cache-control": "public, max-age=0, s-maxage=10, stale-while-revalidate=20",
+  "cache-control": "no-store, no-cache, must-revalidate",
+  pragma: "no-cache",
+  expires: "0",
 };
+
+let cachedAccessToken = null;
+let accessTokenExpiresAt = 0;
 
 function response(statusCode, body) {
   return {
@@ -12,6 +17,10 @@ function response(statusCode, body) {
 }
 
 async function getAccessToken() {
+  if (cachedAccessToken && Date.now() < accessTokenExpiresAt) {
+    return cachedAccessToken;
+  }
+
   const clientId = process.env.SPOTIFY_CLIENT_ID;
   const clientSecret = process.env.SPOTIFY_CLIENT_SECRET;
   const refreshToken = process.env.SPOTIFY_REFRESH_TOKEN;
@@ -41,7 +50,9 @@ async function getAccessToken() {
     throw new Error(reason);
   }
 
-  return tokenData.access_token;
+  cachedAccessToken = tokenData.access_token;
+  accessTokenExpiresAt = Date.now() + Math.max(0, (tokenData.expires_in || 3600) - 60) * 1000;
+  return cachedAccessToken;
 }
 
 function normalizeTrack(item, isPlaying, playedAt = null) {
@@ -52,12 +63,15 @@ function normalizeTrack(item, isPlaying, playedAt = null) {
     : (item.artists || []).map((artist) => artist.name).join(", ");
 
   const images = item.type === "episode" ? item.images : item.album?.images;
+  // The UI only displays 42–64px artwork. Spotify orders images largest first,
+  // so requesting the smallest version avoids downloading a 640px cover.
+  const smallestImage = images?.at(-1);
 
   return {
     id: item.id || item.uri || null,
     track: item.name || "Unknown track",
     artist: artists || "Spotify",
-    albumArt: images?.[0]?.url || null,
+    albumArt: smallestImage?.url || images?.[0]?.url || null,
     isPlaying,
     playedAt,
     url: item.external_urls?.spotify || item.show?.external_urls?.spotify || null,
@@ -82,7 +96,7 @@ export const handler = async (event) => {
         "/me/player/currently-playing?additional_types=track,episode",
         accessToken,
       ),
-      spotifyFetch("/me/player/recently-played?limit=3", accessToken),
+      spotifyFetch("/me/player/recently-played?limit=4", accessToken),
     ]);
 
     let currentTrack = null;
@@ -99,9 +113,13 @@ export const handler = async (event) => {
     }
 
     const recent = await recentResponse.json();
-    const history = (recent.items || [])
+    const recentlyPlayed = (recent.items || [])
       .map((entry) => normalizeTrack(entry.track, false, entry.played_at))
-      .filter(Boolean)
+      .filter(Boolean);
+    // Spotify does not add a song to recently-played until it finishes. Put the
+    // live song first so the visible "Last 3" changes as soon as the song does.
+    const history = [currentTrack?.isPlaying ? currentTrack : null, ...recentlyPlayed]
+      .filter((track, index, tracks) => track && tracks.findIndex((item) => item.id === track.id) === index)
       .slice(0, 3);
 
     const displayTrack = currentTrack || history[0] || {

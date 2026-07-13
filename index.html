@@ -9,6 +9,7 @@
   />
 
   <title>Charlie Stimac</title>
+  <link rel="preconnect" href="https://i.scdn.co" crossorigin />
   <link rel="stylesheet" href="styles.css" />
   <script>document.documentElement.classList.add("js");</script>
 </head>
@@ -282,6 +283,7 @@
   <script>
     const ADMIN_PASSWORD = "change-me";
     const PHOTO_STORAGE_KEY = "charlie-site-landscape-photos";
+    const SPOTIFY_CACHE_KEY = "charlie-site-spotify-cache-v1";
 
     const spotifyTrack = document.getElementById("spotify-track");
     const spotifyArtist = document.getElementById("spotify-artist");
@@ -397,7 +399,8 @@
           const image = document.createElement("img");
           image.src = item.albumArt;
           image.alt = "";
-          image.loading = "lazy";
+          image.loading = "eager";
+          image.decoding = "async";
           artwork.appendChild(image);
         } else {
           artwork.textContent = "♪";
@@ -419,22 +422,34 @@
 
     let spotifyRequestInFlight = false;
 
+    function renderSpotify(data) {
+      spotifyTrack.textContent = data.track || "Nothing playing";
+      spotifyArtist.textContent = data.artist || "Spotify";
+      spotifyStatus.textContent = data.isPlaying ? "Playing now" : "Last played";
+      renderSpotifyHistory(Array.isArray(data.history) ? data.history : []);
+
+      spotifyArt.style.backgroundImage = data.albumArt ? `url("${data.albumArt}")` : "";
+      spotifyArt.classList.toggle("has-art", Boolean(data.albumArt));
+    }
+
+    try {
+      const cachedSpotify = JSON.parse(localStorage.getItem(SPOTIFY_CACHE_KEY));
+      if (cachedSpotify) renderSpotify(cachedSpotify);
+    } catch (error) {
+      localStorage.removeItem(SPOTIFY_CACHE_KEY);
+    }
+
     async function loadSpotify() {
       if (spotifyRequestInFlight) return;
       spotifyRequestInFlight = true;
 
       try {
-        const response = await fetch("/api/spotify");
+        const response = await fetch(`/api/spotify?t=${Date.now()}`, { cache: "no-store" });
         if (!response.ok) throw new Error("Spotify endpoint unavailable");
         const data = await response.json();
 
-        spotifyTrack.textContent = data.track || "Nothing playing";
-        spotifyArtist.textContent = data.artist || "Spotify";
-        spotifyStatus.textContent = data.isPlaying ? "Playing now" : "Last played";
-        renderSpotifyHistory(Array.isArray(data.history) ? data.history : []);
-
-        spotifyArt.style.backgroundImage = data.albumArt ? `url("${data.albumArt}")` : "";
-        spotifyArt.classList.toggle("has-art", Boolean(data.albumArt));
+        renderSpotify(data);
+        localStorage.setItem(SPOTIFY_CACHE_KEY, JSON.stringify(data));
       } catch (error) {
         console.info("Connect /api/spotify to show live listening activity.");
       } finally {
@@ -717,7 +732,7 @@
     loadSpotify();
     window.setInterval(() => {
       if (!document.hidden) loadSpotify();
-    }, 15000);
+    }, 5000);
     document.addEventListener("visibilitychange", () => {
       if (!document.hidden) loadSpotify();
     });
