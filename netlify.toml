@@ -3,6 +3,9 @@ publish = "."
 port = 8888
 autoLaunch = false
 
+[functions."spotify-sync"]
+schedule = "* * * * *"
+
 [[redirects]]
 from = "/api/spotify"
 to = "/.netlify/functions/spotify"
