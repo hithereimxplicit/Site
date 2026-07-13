@@ -1,3 +1,18 @@
+[dev]
+publish = "."
+port = 8888
+autoLaunch = false
+
+[[redirects]]
+from = "/api/spotify"
+to = "/.netlify/functions/spotify"
+status = 200
+
+[[redirects]]
+from = "/api/socials"
+to = "/.netlify/functions/socials"
+status = 200
+
 [[redirects]]
 from = "/share/*"
 to = "/.netlify/functions/share"
