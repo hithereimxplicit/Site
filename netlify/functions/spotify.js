@@ -1,6 +1,6 @@
 const JSON_HEADERS = {
   "content-type": "application/json; charset=utf-8",
-  "cache-control": "public, max-age=0, s-maxage=30, stale-while-revalidate=60",
+  "cache-control": "public, max-age=0, s-maxage=10, stale-while-revalidate=20",
 };
 
 function response(statusCode, body) {
@@ -44,7 +44,7 @@ async function getAccessToken() {
   return tokenData.access_token;
 }
 
-function normalizeTrack(item, isPlaying) {
+function normalizeTrack(item, isPlaying, playedAt = null) {
   if (!item) return null;
 
   const artists = item.type === "episode"
@@ -54,10 +54,12 @@ function normalizeTrack(item, isPlaying) {
   const images = item.type === "episode" ? item.images : item.album?.images;
 
   return {
+    id: item.id || item.uri || null,
     track: item.name || "Unknown track",
     artist: artists || "Spotify",
     albumArt: images?.[0]?.url || null,
     isPlaying,
+    playedAt,
     url: item.external_urls?.spotify || item.show?.external_urls?.spotify || null,
   };
 }
@@ -75,34 +77,48 @@ export const handler = async (event) => {
 
   try {
     const accessToken = await getAccessToken();
-    const currentResponse = await spotifyFetch(
-      "/me/player/currently-playing?additional_types=track,episode",
-      accessToken,
-    );
+    const [currentResponse, recentResponse] = await Promise.all([
+      spotifyFetch(
+        "/me/player/currently-playing?additional_types=track,episode",
+        accessToken,
+      ),
+      spotifyFetch("/me/player/recently-played?limit=3", accessToken),
+    ]);
+
+    let currentTrack = null;
 
     if (currentResponse.status === 200) {
       const current = await currentResponse.json();
-      const track = normalizeTrack(current.item, Boolean(current.is_playing));
-      if (track) return response(200, track);
+      currentTrack = normalizeTrack(current.item, Boolean(current.is_playing));
     } else if (currentResponse.status !== 204) {
       throw new Error(`Spotify currently-playing request failed (${currentResponse.status})`);
     }
-
-    const recentResponse = await spotifyFetch("/me/player/recently-played?limit=1", accessToken);
 
     if (!recentResponse.ok) {
       throw new Error(`Spotify recently-played request failed (${recentResponse.status})`);
     }
 
     const recent = await recentResponse.json();
-    const track = normalizeTrack(recent.items?.[0]?.track, false);
+    const history = (recent.items || [])
+      .map((entry) => normalizeTrack(entry.track, false, entry.played_at))
+      .filter(Boolean)
+      .slice(0, 3);
 
-    return response(200, track || {
+    const displayTrack = currentTrack || history[0] || {
+      id: null,
       track: "Nothing playing",
       artist: "Spotify",
       albumArt: null,
       isPlaying: false,
+      playedAt: null,
       url: null,
+    };
+
+    return response(200, {
+      ...displayTrack,
+      current: currentTrack,
+      history,
+      updatedAt: new Date().toISOString(),
     });
   } catch (error) {
     console.error("Spotify API error:", error.message);

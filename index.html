@@ -139,6 +139,16 @@
             </div>
           </div>
           <span class="spotify-state live-indicator" id="spotify-status">Last played</span>
+
+          <div class="spotify-history-panel">
+            <div class="spotify-history-heading">
+              <span>Listening history</span>
+              <span>Last 3</span>
+            </div>
+            <div class="spotify-history" id="spotify-history">
+              <p class="spotify-history-empty">Recent tracks will appear here.</p>
+            </div>
+          </div>
         </article>
       </div>
     </section>
@@ -277,6 +287,7 @@
     const spotifyArtist = document.getElementById("spotify-artist");
     const spotifyStatus = document.getElementById("spotify-status");
     const spotifyArt = document.getElementById("spotify-art");
+    const spotifyHistory = document.getElementById("spotify-history");
     const photoGrid = document.getElementById("photo-grid");
     const adminDialog = document.getElementById("admin-dialog");
     const openAdminButton = document.getElementById("open-admin");
@@ -338,7 +349,80 @@
     window.addEventListener("resize", updateScrollEffects);
     updateScrollEffects();
 
+    function formatPlayedAt(value) {
+      if (!value) return "Recently";
+
+      const elapsedMinutes = Math.max(0, Math.floor((Date.now() - new Date(value).getTime()) / 60000));
+      if (elapsedMinutes < 1) return "Just now";
+      if (elapsedMinutes < 60) return `${elapsedMinutes}m ago`;
+
+      const elapsedHours = Math.floor(elapsedMinutes / 60);
+      if (elapsedHours < 24) return `${elapsedHours}h ago`;
+      return `${Math.floor(elapsedHours / 24)}d ago`;
+    }
+
+    function renderSpotifyHistory(tracks) {
+      spotifyHistory.replaceChildren();
+
+      if (!tracks.length) {
+        const emptyState = document.createElement("p");
+        emptyState.className = "spotify-history-empty";
+        emptyState.textContent = "No recent listening history yet.";
+        spotifyHistory.appendChild(emptyState);
+        return;
+      }
+
+      tracks.slice(0, 3).forEach((item, index) => {
+        const row = document.createElement(item.url ? "a" : "div");
+        const position = document.createElement("span");
+        const artwork = document.createElement("span");
+        const details = document.createElement("span");
+        const title = document.createElement("strong");
+        const artist = document.createElement("span");
+        const playedAt = document.createElement("time");
+
+        row.className = "spotify-history-row";
+        if (item.url) {
+          row.href = item.url;
+          row.target = "_blank";
+          row.rel = "noreferrer";
+          row.setAttribute("aria-label", `Open ${item.track} by ${item.artist} on Spotify`);
+        }
+
+        position.className = "spotify-history-position";
+        position.textContent = String(index + 1).padStart(2, "0");
+
+        artwork.className = "spotify-history-art";
+        if (item.albumArt) {
+          const image = document.createElement("img");
+          image.src = item.albumArt;
+          image.alt = "";
+          image.loading = "lazy";
+          artwork.appendChild(image);
+        } else {
+          artwork.textContent = "♪";
+        }
+
+        details.className = "spotify-history-details";
+        title.textContent = item.track || "Unknown track";
+        artist.textContent = item.artist || "Spotify";
+        details.append(title, artist);
+
+        playedAt.className = "spotify-history-time";
+        playedAt.dateTime = item.playedAt || "";
+        playedAt.textContent = formatPlayedAt(item.playedAt);
+
+        row.append(position, artwork, details, playedAt);
+        spotifyHistory.appendChild(row);
+      });
+    }
+
+    let spotifyRequestInFlight = false;
+
     async function loadSpotify() {
+      if (spotifyRequestInFlight) return;
+      spotifyRequestInFlight = true;
+
       try {
         const response = await fetch("/api/spotify");
         if (!response.ok) throw new Error("Spotify endpoint unavailable");
@@ -347,13 +431,14 @@
         spotifyTrack.textContent = data.track || "Nothing playing";
         spotifyArtist.textContent = data.artist || "Spotify";
         spotifyStatus.textContent = data.isPlaying ? "Playing now" : "Last played";
+        renderSpotifyHistory(Array.isArray(data.history) ? data.history : []);
 
-        if (data.albumArt) {
-          spotifyArt.style.backgroundImage = `url("${data.albumArt}")`;
-          spotifyArt.classList.add("has-art");
-        }
+        spotifyArt.style.backgroundImage = data.albumArt ? `url("${data.albumArt}")` : "";
+        spotifyArt.classList.toggle("has-art", Boolean(data.albumArt));
       } catch (error) {
         console.info("Connect /api/spotify to show live listening activity.");
+      } finally {
+        spotifyRequestInFlight = false;
       }
     }
 
@@ -630,6 +715,12 @@
     });
 
     loadSpotify();
+    window.setInterval(() => {
+      if (!document.hidden) loadSpotify();
+    }, 15000);
+    document.addEventListener("visibilitychange", () => {
+      if (!document.hidden) loadSpotify();
+    });
     renderPhotos();
 
     (async () => {
