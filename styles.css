@@ -2117,10 +2117,11 @@ a {
   }
 
   .hero h1 {
-    max-width: calc(100vw - 40px);
+    min-width: 0;
+    max-width: calc(100vw - 128px);
 
-    font-size: 10.2vw;
-    line-height: 0.9;
+    font-size: clamp(3.4rem, 15vw, 6.75rem);
+    line-height: 0.82;
     letter-spacing: -0.07em;
 
     -webkit-text-stroke:
@@ -2139,6 +2140,7 @@ a {
   }
 
   .hero-title-row {
+    align-items: flex-end;
     gap: 12px;
   }
 
@@ -2286,7 +2288,8 @@ a {
 
 @media (max-width: 390px) {
   .hero h1 {
-    font-size: 9.8vw;
+    max-width: calc(100vw - 112px);
+    font-size: 15vw;
   }
 
   .header-brand > span:last-child {
