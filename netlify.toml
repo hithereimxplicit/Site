@@ -30,3 +30,8 @@ status = 301
 from = "/drop-admin"
 to = "/drop-admin/"
 status = 301
+
+[[redirects]]
+from = "/post*"
+to = "/.netlify/functions/drop-delivery"
+status = 200

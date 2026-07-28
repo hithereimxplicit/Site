@@ -24,6 +24,22 @@ create table if not exists public.drop_files (
   created_at timestamptz not null default now()
 );
 
+create table if not exists public.drop_deliveries (
+  number bigint generated always as identity primary key,
+  submission_id uuid not null unique references public.drop_submissions(id) on delete cascade,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists public.drop_delivery_files (
+  id uuid primary key default gen_random_uuid(),
+  delivery_number bigint not null references public.drop_deliveries(number) on delete cascade,
+  original_name text not null,
+  mime_type text not null,
+  byte_size bigint not null check (byte_size > 0 and byte_size <= 52428800),
+  storage_path text not null unique,
+  created_at timestamptz not null default now()
+);
+
 create index if not exists drop_submissions_recent_ip
   on public.drop_submissions (ip_hash, created_at desc);
 create index if not exists drop_files_submission
@@ -31,6 +47,8 @@ create index if not exists drop_files_submission
 
 alter table public.drop_submissions enable row level security;
 alter table public.drop_files enable row level security;
+alter table public.drop_deliveries enable row level security;
+alter table public.drop_delivery_files enable row level security;
 
 -- The service-role-backed Netlify functions are the only database access path.
 -- No public RLS policies are intentionally created.

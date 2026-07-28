@@ -30,7 +30,9 @@ Redeploy after changing environment variables.
 2. Open `charliestimac.site/drop-admin` on the editing computer.
 3. Enter `DROP_ADMIN_KEY`, download an original, and change it to **Editing**.
 4. Change it to **Done** after the live edit.
-5. Use **Delete** when the original is no longer needed. This permanently removes
+5. Click **Upload edit** to add the finished file. The queue creates and copies a
+   short viewer link such as `charliestimac.site/post1`.
+6. Use **Delete** when the original is no longer needed. This permanently removes
    the database record and every uploaded file for that submission.
 
 The current limits are three photos per submission, 50 MB per file, and three
