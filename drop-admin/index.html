@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex,nofollow" />
+  <title>Drop Queue — Charlie Stimac</title>
+  <link rel="stylesheet" href="/styles.css" />
+  <link rel="stylesheet" href="/drop/drop.css" />
+  <link rel="stylesheet" href="/drop-admin/admin.css" />
+</head>
+<body class="drop-body admin-body">
+  <header class="drop-header">
+    <a class="drop-brand" href="/"><img src="/CSLOGO.png" alt="" /><span>Charlie Stimac</span></a>
+    <span class="live-badge"><i></i> Stream queue</span>
+  </header>
+
+  <main class="queue-shell">
+    <section class="login-card" id="login-card">
+      <p class="drop-kicker">PRIVATE ACCESS</p>
+      <h1>Open the queue.</h1>
+      <p>Use your Drop Admin Key. It stays in this browser tab only.</p>
+      <form id="login-form">
+        <label><span>Admin key</span><input id="admin-key" type="password" autocomplete="current-password" required /></label>
+        <button class="submit-drop" type="submit"><span>View submissions</span><b>↗</b></button>
+        <p class="form-status" id="login-status"></p>
+      </form>
+    </section>
+
+    <section id="queue" hidden>
+      <div class="queue-heading">
+        <div><p class="drop-kicker">LIVE WORKSPACE</p><h1>Photo queue</h1></div>
+        <div class="queue-actions">
+          <span id="queue-count">0 submissions</span>
+          <button id="refresh" type="button">Refresh</button>
+          <button id="lock" type="button">Lock</button>
+        </div>
+      </div>
+      <div class="filter-row" id="filters">
+        <button class="active" data-filter="all">All</button>
+        <button data-filter="new">New</button>
+        <button data-filter="editing">Editing</button>
+        <button data-filter="done">Done</button>
+      </div>
+      <div class="submission-list" id="submission-list"></div>
+      <div class="empty-state" id="empty-state" hidden>No photos in this view yet.</div>
+    </section>
+  </main>
+  <script src="/drop-admin/admin.js"></script>
+</body>
+</html>
+

@@ -20,3 +20,13 @@ status = 200
 from = "/share/*"
 to = "/.netlify/functions/share"
 status = 200
+
+[[redirects]]
+from = "/drop"
+to = "/drop/"
+status = 301
+
+[[redirects]]
+from = "/drop-admin"
+to = "/drop-admin/"
+status = 301
