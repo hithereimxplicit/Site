@@ -32,6 +32,16 @@ to = "/drop-admin/"
 status = 301
 
 [[redirects]]
+from = "/montage"
+to = "/montage/"
+status = 301
+
+[[redirects]]
+from = "/montage-admin"
+to = "/montage-admin/"
+status = 301
+
+[[redirects]]
 from = "/post*"
 to = "/.netlify/functions/drop-delivery"
 status = 200

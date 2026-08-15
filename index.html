@@ -5,7 +5,9 @@
   <meta property="og:title" content="Charlie Stimac"><meta property="og:description" content="Charlie Stimac — coming soon.">
   <meta property="og:image" content="/CSLOGO.png"><meta property="og:type" content="website">
   <title>Charlie Stimac</title><link rel="icon" href="/CSLOGO.png"><link rel="stylesheet" href="/styles.css">
-</head><body>
+  <script>document.documentElement.classList.add("js")</script>
+</head><body class="preloading">
+  <div class="preloader" id="preloader" aria-hidden="true"><img class="preloader-logo" src="/CSLOGO.png" alt=""></div>
   <main class="profile">
     <div class="brand-lockup">
       <img class="logo" src="/CSLOGO.png" alt="Charlie Stimac logo">
@@ -22,7 +24,22 @@
         <strong>TikTok</strong><span class="arrow" aria-hidden="true">↗</span>
       </a>
     </nav>
+    <a class="promo-pill" href="https://xplicitpromo.com" target="_blank" rel="noreferrer">
+      <span>Xplicit Promo</span><span class="arrow" aria-hidden="true">↗</span>
+    </a>
   </main>
   <footer>© <span id="year"></span> Charlie Stimac</footer>
-  <script>document.getElementById("year").textContent=new Date().getFullYear()</script>
+  <script>
+    document.getElementById("year").textContent=new Date().getFullYear();
+    const preloader=document.getElementById("preloader");
+    function finishPreload(){
+      if(!preloader||preloader.classList.contains("is-leaving"))return;
+      preloader.classList.add("is-leaving");
+      document.body.classList.remove("preloading");
+      preloader.addEventListener("animationend",()=>preloader.remove(),{once:true});
+      window.setTimeout(()=>preloader.remove(),1800);
+    }
+    if(document.readyState==="complete")window.setTimeout(finishPreload,450);
+    else window.addEventListener("load",()=>window.setTimeout(finishPreload,450),{once:true});
+  </script>
 </body></html>
